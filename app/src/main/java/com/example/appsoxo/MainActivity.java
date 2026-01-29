@@ -1,5 +1,6 @@
 package com.example.appsoxo;
 
+import android.content.SharedPreferences;
 import android.graphics.*;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -24,9 +25,11 @@ public class MainActivity extends AppCompatActivity {
 
     ProgressBar loading;
 
+    SharedPreferences cache;
+
     Handler handler = new Handler(Looper.getMainLooper());
     int retryCount = 0;
-    final int MAX_RETRY = 3;
+    final int MAX_RETRY = 5;
 
 
 
@@ -39,6 +42,28 @@ public class MainActivity extends AppCompatActivity {
         txtDate = findViewById(R.id.txtDate);
         edtSo = findViewById(R.id.edtSo);
         loading = findViewById(R.id.loading);
+        cache = getSharedPreferences("XOSO_CACHE", MODE_PRIVATE);
+
+        String cachedJson = cache.getString("json", null);
+        String cachedDate = cache.getString("date", "");
+
+
+        if (cachedJson == null) {
+            loadData();
+        }
+
+        if (cachedJson != null) {
+            try {
+                JSONObject res = new JSONObject(cachedJson);
+                txtDate.setText("Ngày " + cachedDate + " (đã lưu)");
+                JSONArray arr = res.getJSONArray("provinces");
+
+                container.removeAllViews();
+                for (int i = 0; i < arr.length(); i++) {
+                    drawProvince(arr.getJSONObject(i));
+                }
+            } catch (Exception e) {}
+        }
 
         findViewById(R.id.btnDo).setOnClickListener(v -> {
             soDo = edtSo.getText().toString().trim();
@@ -64,12 +89,19 @@ public class MainActivity extends AppCompatActivity {
 
                     try {
                         txtDate.setText("Ngày " + res.getString("date"));
+                        String date = res.getString("date");
+
+                        cache.edit()
+                                .putString("json", res.toString())
+                                .putString("date", date)
+                                .apply();
+
                         JSONArray arr = res.getJSONArray("provinces");
 
                         container.removeAllViews();
 
                         for (int i = 0; i < arr.length(); i++) {
-                            drawProvince(arr.getJSONObject(i));
+                            drawProvince(arr.getJSONObject(i)) ;
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -83,10 +115,11 @@ public class MainActivity extends AppCompatActivity {
 
                         txtDate.setText(
                                 "Hệ thống đang khởi động dữ liệu...\n" +
-                                        "Vui lòng chờ trong giây lát (" + retryCount + "/3)"
+                                        "Vui lòng chờ trong giây lát (" + retryCount + "/" + MAX_RETRY + ")"
                         );
 
-                        handler.postDelayed(this::loadData, 5000); // 🔥 retry sau 5s
+                        int delay = retryCount * 8000; // 8s, 16s, 24s, 32s...
+                        handler.postDelayed(this::loadData, delay);
                     } else {
                         txtDate.setText("Không thể tải dữ liệu.\nVui lòng thử lại sau.");
                         Toast.makeText(
@@ -118,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
         TextView title = new TextView(this);
         title.setText(o.getString("province"));
         title.setTextSize(34);
+        title.setPadding(12,12,12,16);
         title.setTypeface(null, Typeface.BOLD);
         title.setTextColor(Color.BLUE);
         title.setGravity(Gravity.CENTER);
@@ -155,14 +189,13 @@ public class MainActivity extends AppCompatActivity {
             tvValue.setLineSpacing(6, 1.2f);                  // GIÃN DÒNG
             tvValue.setPadding(8, 6, 8, 6);                    // THOÁNG
 
-            if (dacBiet) tvValue.setTextColor(Color.RED);
             if (dacBiet) {
                 tvValue.setTextSize(36);
                 tvValue.setTextColor(Color.RED);
                 tvValue.setTypeface(null, Typeface.BOLD);
             }
 
-            if (giai8) tvValue.setTextColor(Color.parseColor("#F57C00"));
+
             if (giai8) {
                 tvValue.setTextSize(34);
                 tvValue.setTextColor(Color.parseColor("#F57C00"));

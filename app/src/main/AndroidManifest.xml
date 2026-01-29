@@ -7,9 +7,9 @@
 
     <application
         android:allowBackup="true"
-        android:label="Xổ Số Miền Nam"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="Xổ Số"
+        android:icon="@mipmap/appicon"
+        android:roundIcon="@mipmap/appicon_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Appsoxo">
 
